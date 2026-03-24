@@ -1,0 +1,13 @@
+[
+  "CKV2_AWS_61::aws_s3_bucket.alb_logs_replica",
+  "CKV2_AWS_61::aws_s3_bucket.images_replica",
+  "CKV2_AWS_61::aws_s3_bucket.static_assets_replica",
+  "CKV_AWS_145::aws_s3_bucket.alb_logs_replica",
+  "CKV_AWS_145::aws_s3_bucket.images_replica",
+  "CKV_AWS_145::aws_s3_bucket.static_assets_replica",
+  "3.7::aws_s3_bucket.alb_logs",
+  "3.7::aws_s3_bucket.images",
+  "3.7::aws_s3_bucket.static_assets",
+  "3.9::aws_lb.main",
+  "4.3::aws_s3_bucket.alb_logs"
+]

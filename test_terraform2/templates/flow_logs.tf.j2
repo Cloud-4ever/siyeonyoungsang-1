@@ -1,0 +1,6 @@
+resource "aws_flow_log" "{{ name }}" {
+  log_destination      = "{{ log_destination }}"
+  log_destination_type = "{{ log_destination_type }}"
+  traffic_type         = "{{ traffic_type }}"
+  vpc_id               = "{{ vpc_id }}"
+}

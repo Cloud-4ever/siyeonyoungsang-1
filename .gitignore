@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+tfplan.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform lock info generated during runs
+.terraform.tfstate.lock.info
+
+# Local outputs
+result.json
+remedyresult.json
+*.zip
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

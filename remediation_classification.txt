@@ -1,0 +1,80 @@
+Diagnosis Result Remediation Classification
+
+Source file:
+- diag_run_20260323_103230/frontend_vulnerabilities.json
+
+Summary:
+- Auto-remediable vulnerabilities: 37
+- Manual-remediation vulnerabilities: 29
+
+Auto-remediable
+
+- CKV_AWS_28::aws_dynamodb_table.reviews
+- CKV_AWS_119::aws_dynamodb_table.reviews
+- CKV_AWS_126::aws_instance.app_a
+- CKV_AWS_135::aws_instance.app_a
+- CKV_AWS_79::aws_instance.app_a
+- CKV_AWS_126::aws_instance.app_c
+- CKV_AWS_135::aws_instance.app_c
+- CKV_AWS_79::aws_instance.app_c
+- CKV_AWS_7::aws_kms_key.rds
+- CKV_AWS_129::aws_db_instance.main
+- CKV_AWS_226::aws_db_instance.main
+- CKV_AWS_118::aws_db_instance.main
+- CKV_AWS_161::aws_db_instance.main
+- CKV_AWS_293::aws_db_instance.main
+- CKV_AWS_157::aws_db_instance.main
+- CKV_AWS_149::aws_secretsmanager_secret.db_credentials
+- CKV_AWS_23::aws_security_group.alb
+- CKV_AWS_23::aws_security_group.app
+- CKV_AWS_23::aws_security_group.db
+- CKV_AWS_103::aws_lb_listener.https
+- CKV2_AWS_74::aws_lb_listener.https
+- CKV2_AWS_60::aws_db_instance.main
+- CKV_AWS_21::aws_s3_bucket.alb_logs
+- CKV_AWS_21::aws_s3_bucket.images
+- CKV_AWS_21::aws_s3_bucket.static_assets
+- CKV2_AWS_61::aws_s3_bucket.alb_logs
+- CKV2_AWS_61::aws_s3_bucket.images
+- CKV2_AWS_61::aws_s3_bucket.static_assets
+- CKV2_AWS_11::aws_vpc.main
+- CKV_AWS_145::aws_s3_bucket.alb_logs
+- CKV_AWS_145::aws_s3_bucket.images
+- CKV_AWS_145::aws_s3_bucket.static_assets
+- 3.7::aws_s3_bucket.alb_logs
+- 3.7::aws_s3_bucket.images
+- 3.7::aws_s3_bucket.static_assets
+- 3.9::aws_lb.main
+- 4.3::aws_s3_bucket.alb_logs
+
+Manual-remediation required
+
+- CKV_AWS_192::aws_wafv2_web_acl.main
+- CKV_AWS_382::aws_security_group.alb
+- CKV_AWS_260::aws_security_group.alb
+- CKV_AWS_382::aws_security_group.app
+- CKV_AWS_382::aws_security_group.db
+- CKV_AWS_130::aws_subnet.public_a
+- CKV_AWS_130::aws_subnet.public_c
+- CKV2_AWS_76::aws_lb.main
+- CKV2_AWS_41::aws_instance.app_a
+- CKV2_AWS_41::aws_instance.app_c
+- CKV2_AWS_64::aws_kms_key.rds
+- CKV2_AWS_62::aws_s3_bucket.alb_logs
+- CKV2_AWS_62::aws_s3_bucket.images
+- CKV2_AWS_62::aws_s3_bucket.static_assets
+- CKV_AWS_18::aws_s3_bucket.alb_logs
+- CKV_AWS_18::aws_s3_bucket.images
+- CKV_AWS_18::aws_s3_bucket.static_assets
+- CKV_AWS_144::aws_s3_bucket.alb_logs
+- CKV_AWS_144::aws_s3_bucket.images
+- CKV_AWS_144::aws_s3_bucket.static_assets
+- CKV2_AWS_57::aws_secretsmanager_secret.db_credentials
+- CKV2_AWS_31::aws_wafv2_web_acl.main
+- 3.1::aws_security_group.alb
+- 3.1::aws_security_group.app
+- 3.1::aws_security_group.db
+- 3.4::aws_route_table.private_app
+- 3.4::aws_route_table.public
+- 3.5::aws_internet_gateway.main
+- 3.6::aws_nat_gateway.main

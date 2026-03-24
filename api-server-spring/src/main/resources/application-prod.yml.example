@@ -1,0 +1,47 @@
+# ============================================
+# 운영(AWS) 환경 설정 (Day 3-5)
+# 이 파일을 application-prod.yml로 복사하여 사용
+# application-prod.yml은 .gitignore에 추가할 것!
+# ============================================
+# 실행: java -jar app.jar --spring.profiles.active=prod
+# 또는: ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ecommerce}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+  h2:
+    console:
+      enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  db:
+    type: mysql
+  jwt:
+    secret: ${JWT_SECRET:change-this-in-production}
+  storage:
+    type: s3
+    s3:
+      bucket: ${S3_BUCKET:my-ecommerce-bucket}
+      region: ${S3_REGION:ap-northeast-2}
+  review:
+    store: dynamodb
+    dynamodb:
+      table: ${DYNAMODB_TABLE:Reviews}
+      region: ${DYNAMODB_REGION:ap-northeast-2}
+  cache:
+    type: redis
+  queue:
+    type: sqs
+    sqs:
+      queue-url: ${SQS_QUEUE_URL:}
+    sns:
+      topic-arn: ${SNS_TOPIC_ARN:}
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}

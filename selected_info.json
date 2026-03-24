@@ -1,0 +1,77 @@
+{
+  "runId": "remedy_run_20260323_152944",
+  "selectedIds": [],
+  "selectedRemediations": [
+    {
+      "id": "CKV2_AWS_76::aws_lb.main",
+      "inputs": {
+        "managedRuleGroup": "AWSManagedRulesKnownBadInputsRuleSet",
+        "webAclArn": "arn:aws:wafv2:ap-northeast-2:123456789012:regional/webacl/shopeasy-web-acl/example",
+        "associateToResourceArn": "arn:aws:elasticloadbalancing:ap-northeast-2:123456789012:loadbalancer/app/shopeasy-alb/example",
+        "decisionNote": "Attach WAF WebACL with AWS managed rules for the ALB."
+      }
+    },
+    {
+      "id": "CKV_AWS_144::aws_s3_bucket.alb_logs",
+      "inputs": {
+        "destinationBucketArn": "arn:aws:s3:::shopeasy-alb-logs-dr",
+        "replicationRoleArn": "arn:aws:iam::123456789012:role/shopeasy-s3-replication-role",
+        "replicaKmsKeyArn": "arn:aws:kms:ap-northeast-1:123456789012:key/example-replica-key",
+        "replicateDeleteMarkers": true,
+        "decisionNote": "Enable cross-region replication for ALB logs."
+      }
+    },
+    {
+      "id": "CKV_AWS_144::aws_s3_bucket.images",
+      "inputs": {
+        "destinationBucketArn": "arn:aws:s3:::shopeasy-images-dr",
+        "replicationRoleArn": "arn:aws:iam::123456789012:role/shopeasy-s3-replication-role",
+        "replicaKmsKeyArn": "arn:aws:kms:ap-northeast-1:123456789012:key/example-replica-key",
+        "replicateDeleteMarkers": true,
+        "decisionNote": "Enable cross-region replication for the images bucket."
+      }
+    },
+    {
+      "id": "CKV_AWS_144::aws_s3_bucket.static_assets",
+      "inputs": {
+        "destinationBucketArn": "arn:aws:s3:::shopeasy-static-assets-dr",
+        "replicationRoleArn": "arn:aws:iam::123456789012:role/shopeasy-s3-replication-role",
+        "replicaKmsKeyArn": "arn:aws:kms:ap-northeast-1:123456789012:key/example-replica-key",
+        "replicateDeleteMarkers": true,
+        "decisionNote": "Enable cross-region replication for the static assets bucket."
+      }
+    },
+    {
+      "id": "3.4::aws_route_table.private_app",
+      "inputs": {
+        "cidr": "192.168.123.100/32",
+        "targetType": "nat_gateway",
+        "targetResourceId": "aws_nat_gateway.main",
+        "decisionNote": "Restrict outbound route to a specific IP instead of 0.0.0.0/0."
+      }
+    },
+    {
+      "id": "3.4::aws_route_table.public",
+      "inputs": {
+        "cidr": "203.0.113.0/24",
+        "targetType": "internet_gateway",
+        "targetResourceId": "aws_internet_gateway.main",
+        "decisionNote": "Restrict public route to a specific CIDR range instead of full internet."
+      }
+    },
+    {
+      "id": "3.5::aws_internet_gateway.main",
+      "inputs": {
+        "decision": "keep",
+        "decisionNote": "Approved public subnet internet access through the internet gateway."
+      }
+    },
+    {
+      "id": "3.6::aws_nat_gateway.main",
+      "inputs": {
+        "decision": "keep",
+        "decisionNote": "Approved private app outbound access through the NAT gateway."
+      }
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+Frontend remediation input guide
+
+1. Goal
+- 프론트는 취약점별로 사용자가 직접 값을 넣어야 하는 항목과, id만 선택하면 되는 자동조치 항목을 구분해서 전송한다.
+- 자동조치만 필요한 항목은 selectedIds 로 보낸다.
+- 사용자 입력이 필요한 항목은 selectedRemediations 로 보낸다.
+
+2. Recommended request JSON
+{
+  "runId": "diag_run_20260320_152752",
+  "selectedIds": [
+    "CKV_AWS_79::aws_instance.app_a",
+    "CKV_AWS_28::aws_dynamodb_table.reviews"
+  ],
+  "selectedRemediations": [
+    {
+      "id": "3.1::aws_security_group.alb",
+      "inputs": {
+        "cidr": "0.0.0.0/0",
+        "fromPort": 443,
+        "toPort": 443,
+        "protocol": "tcp"
+      }
+    }
+  ]
+}
+
+3. Auto-remediable checks
+- 아래 항목은 프론트에서 별도 값 입력 없이 id만 체크하면 된다.
+- CKV_AWS_126
+- CKV_AWS_79
+- CKV_AWS_135
+- CKV_AWS_7
+- CKV_AWS_28
+- CKV_AWS_119
+- CKV_AWS_118
+- CKV_AWS_129
+- CKV_AWS_226
+- CKV_AWS_161
+- CKV_AWS_293
+- CKV_AWS_157
+- CKV2_AWS_60
+- CKV_AWS_103
+- CKV2_AWS_74
+- CKV_AWS_21
+- CKV2_AWS_61
+- CKV_AWS_145
+- CKV_AWS_149
+- CKV_AWS_23
+- CKV2_AWS_11
+- 3.7
+- 3.9
+- 4.1
+- 4.2
+- 4.3
+
+4. User-input-required checks
+
+4.1 Network rule type
+- 대상 예시: 3.1, 3.4
+- 사용자가 정해야 하는 값:
+- cidr
+- fromPort
+- toPort
+- protocol
+- direction
+- allowedSourceType
+- allowedSourceSecurityGroupId
+- 설명:
+- 모든 포트 허용, 과도한 라우팅, 과도한 ingress/egress 는 서비스 구조에 따라 정답이 다르므로 사용자가 직접 제한 범위를 정해야 한다.
+- 추천 input types:
+- cidr: cidr
+- fromPort: port
+- toPort: port
+- protocol: select(tcp, udp, icmp, all)
+- direction: select(ingress, egress)
+- allowedSourceType: select(cidr, security_group)
+- allowedSourceSecurityGroupId: resourceRef
+
+4.2 Keep/remove decision type
+- 대상 예시: 3.5, 3.6
+- 사용자가 정해야 하는 값:
+- decision
+- replacementTarget
+- 설명:
+- Internet Gateway, NAT Gateway, public route 는 제거하면 서비스 장애가 날 수 있으므로 사용자가 유지 또는 제거를 선택해야 한다.
+- 추천 input types:
+- decision: radio(keep, remove)
+- replacementTarget: resourceRef or optional text
+
+4.3 Select target type
+- 대상 예시: WAF 연결, instance profile 연결, event target 변경
+- 사용자가 정해야 하는 값:
+- targetType
+- targetArn
+- managedRuleGroup
+- instanceProfileArn
+- wafArn
+- 설명:
+- 연결할 대상 리소스가 여러 개일 수 있으므로 프론트에서 선택 UI를 제공하는 것이 안전하다.
+- 추천 input types:
+- targetType: select
+- targetArn: arn
+- managedRuleGroup: select
+- instanceProfileArn: arn
+- wafArn: arn
+
+4.4 ARN or resource reference type
+- 대상 예시: flow log, KMS, S3 log destination, IAM role 연결
+- 사용자가 정해야 하는 값:
+- logDestinationArn
+- roleArn
+- bucketArn
+- kmsKeyArn
+- logGroupArn
+- 설명:
+- 기존 리소스를 재사용할지 새로 만들지 환경마다 다르므로 참조값을 받을 수 있어야 한다.
+- 추천 input types:
+- logDestinationArn: arn
+- roleArn: arn
+- bucketArn: arn
+- kmsKeyArn: arn
+- logGroupArn: arn
+
+4.5 Boolean or attribute type
+- 대상 예시: subnet public IP on launch, keep/remove flag, deletion protection, logging enabled
+- 사용자가 정해야 하는 값:
+- enabled
+- mapPublicIpOnLaunch
+- publiclyAccessible
+- keepExisting
+- 설명:
+- 단순 on/off 성격의 설정은 toggle 로 받는 것이 가장 간단하다.
+- 추천 input types:
+- enabled: boolean
+- mapPublicIpOnLaunch: boolean
+- publiclyAccessible: boolean
+- keepExisting: boolean
+
+4.6 Policy JSON type
+- 대상 예시: KMS policy, S3 bucket policy, IAM inline policy
+- 사용자가 정해야 하는 값:
+- policyDocument
+- 설명:
+- 고급 사용자 전용 항목으로 두고, 기본 UI에서는 숨기거나 펼침 섹션으로 제공하는 것이 좋다.
+- 추천 input types:
+- policyDocument: jsonPolicy
+
+5. Resource-based manual remediation mapping
+- 아래 정리는 현재 Terraform 리소스 기준으로 "어떤 리소스 화면에서 어떤 입력을 받으면 되는지"를 리소스별로 다시 풀어쓴 것이다.
+- 핵심은 "수동조치 입력폼은 리소스 타입별 preset 으로 보여주고, 실제 취약점 id 에 따라 필요한 필드만 노출"하는 방식이다.
+
+5.1 Security Group
+- 대상 리소스:
+- aws_security_group.alb
+- aws_security_group.app
+- aws_security_group.db
+- 대표 수동조치 체크:
+- 3.1
+- 3.4 와 연결되는 경우 일부 네트워크 판단
+- 받아야 하는 값:
+- cidr
+- fromPort
+- toPort
+- protocol
+- direction
+- allowedSourceType
+- allowedSourceSecurityGroupId
+- 리소스별 기본 예시:
+- aws_security_group.alb: Internet -> ALB 이므로 `0.0.0.0/0`, `80` 또는 `443`, `tcp`
+- aws_security_group.app: ALB -> App 이므로 `allowedSourceType=security_group`, `allowedSourceSecurityGroupId=aws_security_group.alb`, `8080`, `tcp`
+- aws_security_group.db: App -> DB 이므로 `allowedSourceType=security_group`, `allowedSourceSecurityGroupId=aws_security_group.app`, `3306`, `tcp`
+
+5.2 EC2
+- 대상 리소스:
+- aws_instance.app_a
+- aws_instance.app_c
+- 기본적으로 현재 프로젝트에서는 EC2 자체는 대부분 자동조치 대상이다.
+- 대표 자동조치 체크:
+- CKV_AWS_126
+- CKV_AWS_79
+- CKV_AWS_135
+- 4.1
+- 선택적으로 수동 입력이 필요한 경우:
+- instanceProfileArn
+- roleArn
+- keepExisting
+- 설명:
+- 현재 코드 기준 EC2는 직접 포트값을 받는 대상이라기보다, IAM role 연결이나 기존 설정 유지 여부를 받는 select target / reference / boolean 계열 후보로 보는 것이 맞다.
+
+5.3 ALB / Listener / Target Group / WAF
+- 대상 리소스:
+- aws_lb.main
+- aws_lb_listener.http
+- aws_lb_listener.https
+- aws_lb_target_group.app
+- aws_wafv2_web_acl.main
+- aws_wafv2_web_acl_association.alb
+- 대표 자동조치 체크:
+- CKV_AWS_103
+- CKV2_AWS_74
+- 3.9
+- 선택적으로 수동 입력이 필요한 경우:
+- targetType
+- targetArn
+- managedRuleGroup
+- wafArn
+- bucketArn
+- enabled
+- 설명:
+- 현재 샘플 코드에는 WAF와 ALB 연결이 이미 있으므로 기본 프로젝트에서는 자동조치 비중이 크다.
+- 다만 일반화하면 ALB 화면에서는 WAF 연결 대상, 로그 버킷, 리스너 대상 그룹 같은 선택값을 받을 수 있게 해두는 것이 좋다.
+
+5.4 RDS
+- 대상 리소스:
+- aws_db_instance.main
+- aws_db_subnet_group.main
+- 대표 자동조치 체크:
+- CKV_AWS_118
+- CKV_AWS_129
+- CKV_AWS_226
+- CKV_AWS_161
+- CKV_AWS_293
+- CKV_AWS_157
+- CKV2_AWS_60
+- 4.2
+- 선택적으로 수동 입력이 필요한 경우:
+- publiclyAccessible
+- kmsKeyArn
+- roleArn
+- logGroupArn
+- enabled
+- 설명:
+- 현재 프로젝트는 RDS 암호화가 이미 적용되어 있어서 자동조치가 중심이지만, 일반화하면 KMS 키 참조, CloudWatch 로그 대상, 공개 접근 여부 같은 필드는 사용자 선택을 받을 수 있다.
+
+5.5 DynamoDB
+- 대상 리소스:
+- aws_dynamodb_table.reviews
+- 대표 자동조치 체크:
+- CKV_AWS_28
+- CKV_AWS_119
+- 선택적으로 수동 입력이 필요한 경우:
+- kmsKeyArn
+- enabled
+- 설명:
+- 현재 프로젝트에서는 DynamoDB도 대부분 자동조치가 가능하다.
+- 다만 KMS 키를 기존 키로 연결할지 새 키를 쓸지 선택하게 하려면 `kmsKeyArn` 정도는 수동 입력 포인트로 열어둘 수 있다.
+
+5.6 S3
+- 대상 리소스:
+- aws_s3_bucket.images
+- aws_s3_bucket.static_assets
+- aws_s3_bucket.alb_logs
+- 대표 자동조치 체크:
+- CKV_AWS_21
+- CKV2_AWS_61
+- CKV_AWS_145
+- 3.7
+- 4.3
+- 선택적으로 수동 입력이 필요한 경우:
+- bucketArn
+- kmsKeyArn
+- logDestinationArn
+- enabled
+- policyDocument
+- 설명:
+- 현재 샘플에서는 SSE, public access block, HTTPS 강제 정책이 이미 있어 자동조치 중심이다.
+- 하지만 실서비스에서는 버킷 정책 예외, 로그 적재 목적지, KMS 키 재사용 여부 때문에 S3는 policy/json/reference 입력이 필요한 리소스로 보는 것이 안전하다.
+
+5.7 VPC / Route Table / Internet Gateway / NAT Gateway
+- 대상 리소스:
+- aws_vpc.main
+- aws_route_table.public
+- aws_route_table.private_app
+- aws_route_table.private_db
+- aws_internet_gateway.main
+- aws_nat_gateway.main
+- 대표 수동조치 체크:
+- 3.4
+- 3.5
+- 3.6
+- 받아야 하는 값:
+- decision
+- replacementTarget
+- cidr
+- direction
+- targetType
+- targetArn
+- 설명:
+- 이 영역은 서비스 구조 영향이 커서 자동조치보다 수동 입력이 더 중요하다.
+- 예를 들어 public route, IGW, NAT 는 "유지/제거" 판단이 필요하고, 대체 라우팅 대상이 있으면 `replacementTarget` 이 필요하다.
+
+5.8 Frontend grouping recommendation
+- 프론트 리소스 그룹 예시:
+- Compute: EC2
+- Edge: ALB, Listener, Target Group, WAF
+- Data: RDS, DynamoDB, S3
+- Network: Security Group, Route Table, IGW, NAT, VPC
+- 가장 실전적인 렌더링 방식:
+- 1차로 리소스 타입별 기본 입력 preset 을 만들고
+- 2차로 취약점 id 별 required field 를 덮어써서
+- 최종적으로 해당 항목에 필요한 필드만 노출한다.
+
+6. Current project port assumptions
+- 현재 Terraform 기준으로 추정 가능한 주요 포트는 다음과 같다.
+- Internet -> ALB: 80, 443
+- ALB -> App EC2: 8080
+- App EC2 -> RDS(MySQL): 3306
+- 따라서 3.1 관련 기본 추천값 예시는 다음과 같다.
+- aws_security_group.alb: 80 or 443 from 0.0.0.0/0
+- aws_security_group.app: 8080 from aws_security_group.alb
+- aws_security_group.db: 3306 from aws_security_group.app
+
+7. Frontend rendering recommendation
+- 각 취약점 DTO에 remediationForm 을 추가해 프론트가 동적으로 폼을 렌더링하게 한다.
+- remediationForm 예시:
+{
+  "type": "network_rule",
+  "fields": [
+    { "key": "cidr", "inputType": "cidr", "required": true, "default": "0.0.0.0/0" },
+    { "key": "fromPort", "inputType": "port", "required": true, "default": 443 },
+    { "key": "toPort", "inputType": "port", "required": true, "default": 443 },
+    { "key": "protocol", "inputType": "select", "required": true, "options": ["tcp", "udp", "icmp"], "default": "tcp" }
+  ]
+}
+
+8. Practical split
+- selectedIds:
+- 입력 없이 안전하게 자동조치 가능한 항목
+- selectedRemediations:
+- 사용자 값이 필요한 항목
+- 프론트에서는 한 화면에서 둘 다 수집하되, 백엔드 요청 JSON 안에서는 두 배열로 나눠 보내는 것이 가장 실전적이다.
