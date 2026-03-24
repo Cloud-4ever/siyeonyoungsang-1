@@ -1,0 +1,119 @@
+name: C4-Finder Terraform Deploy
+# c4finder-run-marker: 2026-03-24T09:24:19.285900+00:00
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/c4finder-terraform-deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Detect Terraform working directory
+        run: |
+          if [ -d terraform/environments/dev ]; then
+            echo "TF_WORKING_DIR=terraform/environments/dev" >> "$GITHUB_ENV"
+          else
+            echo "TF_WORKING_DIR=terraform" >> "$GITHUB_ENV"
+          fi
+
+      - name: Validate required credentials
+        run: |
+          test -n "${{ secrets.AWS_ACCESS_KEY_ID }}" || (echo "Missing secret: AWS_ACCESS_KEY_ID" && exit 1)
+          test -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" || (echo "Missing secret: AWS_SECRET_ACCESS_KEY" && exit 1)
+
+      - name: Resolve AWS region
+        run: |
+          REGION="${{ vars.AWS_REGION }}"
+          if [ -z "$REGION" ]; then
+            REGION="ap-northeast-1"
+          fi
+          echo "AWS_REGION=$REGION" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Collect deployment identity
+        id: aws_identity
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          CALLER_ARN="$(aws sts get-caller-identity --query Arn --output text)"
+          echo "account_id=${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
+          echo "caller_arn=${CALLER_ARN}" >> "$GITHUB_OUTPUT"
+
+          cat > "$GITHUB_WORKSPACE/deployment-metadata.json" <<EOF
+          {
+            "aws_account_id": "${ACCOUNT_ID}",
+            "caller_arn": "${CALLER_ARN}",
+            "aws_region": "${AWS_REGION}",
+            "workflow": "${{ github.workflow }}",
+            "run_id": "${{ github.run_id }}",
+            "repository": "${{ github.repository }}",
+            "sha": "${{ github.sha }}",
+            "ref": "${{ github.ref }}"
+          }
+          EOF
+
+      - name: Upload deployment metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-metadata
+          path: deployment-metadata.json
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform -chdir="$TF_WORKING_DIR" init
+
+      - name: Terraform Validate
+        run: terraform -chdir="$TF_WORKING_DIR" validate
+
+      - name: Terraform Plan
+        run: terraform -chdir="$TF_WORKING_DIR" plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform -chdir="$TF_WORKING_DIR" apply -auto-approve tfplan
+
+      - name: Export Terraform state files
+        if: always()
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tf-artifacts"
+
+          if terraform -chdir="$TF_WORKING_DIR" state pull > "$GITHUB_WORKSPACE/tf-artifacts/terraform.tfstate"; then
+            echo "state pull succeeded"
+          else
+            echo "state pull failed, fallback to local state file if present"
+          fi
+
+          if [ -f "$TF_WORKING_DIR/terraform.tfstate" ]; then
+            cp "$TF_WORKING_DIR/terraform.tfstate" "$GITHUB_WORKSPACE/tf-artifacts/terraform.local.tfstate"
+          fi
+
+          if [ -f "$TF_WORKING_DIR/terraform.tfstate.backup" ]; then
+            cp "$TF_WORKING_DIR/terraform.tfstate.backup" "$GITHUB_WORKSPACE/tf-artifacts/terraform.tfstate.backup"
+          fi
+
+          cp "$TF_WORKING_DIR/tfplan" "$GITHUB_WORKSPACE/tf-artifacts/tfplan"
+          terraform -chdir="$TF_WORKING_DIR" show -json tfplan > "$GITHUB_WORKSPACE/tf-artifacts/tfplan.json"
+
+      - name: Upload Terraform artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-artifacts-${{ github.run_id }}
+          path: tf-artifacts/
+          if-no-files-found: warn
